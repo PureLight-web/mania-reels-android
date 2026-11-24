@@ -1,7 +1,7 @@
 {
   "splashDurationMs": 2400,
   "everyNthAdsterra": 3,
-  "dailySponsorCap": 25,
+  "dailySponsorCap": 100,
   "adsterraRefreshSec": 60,
   "adsterraBottomCode": "",
   "adsterraGateCode": "",
