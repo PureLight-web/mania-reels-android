@@ -14,12 +14,19 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val APP_URL = "https://mania-reels.pages.dev/"
+        private const val VERSION_CHECK_URL = "https://mania-reels.pages.dev/version.json"
+        private const val CURRENT_VERSION_CODE = 2
     }
 
     private lateinit var webView: WebView
@@ -60,7 +67,6 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
         }
 
-        // Allow ad iframes to load silently inside the app; open user-tapped external ad links in browser
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
@@ -70,12 +76,10 @@ class MainActivity : AppCompatActivity() {
                 val uri = req.url ?: return false
                 val host = uri.host.orEmpty()
 
-                // Keep Mania Reels own pages inside WebView
                 if (host.equals(appHost, ignoreCase = true) || uri.scheme == "about") {
                     return false
                 }
 
-                // Do not hijack background ad iframe loads — only open external browser on real user clicks
                 if (!req.isForMainFrame && !req.hasGesture()) {
                     return false
                 }
@@ -85,7 +89,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Handle target="_blank" clickable ads from wide banner & post-episode ad iframes
         webView.webChromeClient = object : WebChromeClient() {
             override fun onCreateWindow(
                 view: WebView?,
@@ -117,19 +120,61 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Explicitly no DownloadListener — video downloading is removed from Mania Reels
         setContentView(webView)
         webView.loadUrl(APP_URL)
 
+        // Check version.json silently so existing APK users get prompted whenever you release a new APK
+        checkForAppUpdate()
+
+        // Hardware Back returns from Player to Home Page before exiting app
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    finish()
+                webView.evaluateJavascript("window.maniaReelsBack ? window.maniaReelsBack() : false;") { result ->
+                    if (result != "true") {
+                        if (webView.canGoBack()) {
+                            webView.goBack()
+                        } else {
+                            finish()
+                        }
+                    }
                 }
             }
         })
+    }
+
+    private fun checkForAppUpdate() {
+        thread {
+            try {
+                val conn = URL("$VERSION_CHECK_URL?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+                if (conn.responseCode == 200) {
+                    val body = conn.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(body)
+                    val latestCode = json.optInt("latestVersionCode", CURRENT_VERSION_CODE)
+                    val latestName = json.optString("latestVersionName", "")
+                    val apkUrl = json.optString("apkUrl", "")
+                    val notes = json.optString("notes", "A newer version of Mania Reels is available.")
+
+                    if (latestCode > CURRENT_VERSION_CODE && apkUrl.isNotBlank()) {
+                        runOnUiThread {
+                            if (!isFinishing) {
+                                AlertDialog.Builder(this)
+                                    .setTitle("Update Available ($latestName)")
+                                    .setMessage(notes)
+                                    .setPositiveButton("Download Update") { _, _ ->
+                                        openExternalUrl(Uri.parse(apkUrl))
+                                    }
+                                    .setNegativeButton("Later", null)
+                                    .show()
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // Ignore offline/network check errors silently
+            }
+        }
     }
 
     private fun openExternalUrl(uri: Uri) {
@@ -139,7 +184,6 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         } catch (_: Exception) {
-            // Ignore malformed ad URI
         }
     }
 
