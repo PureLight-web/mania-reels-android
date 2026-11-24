@@ -1,11 +1,11 @@
 [
   {
-    "id": "zombies-go-out",
-    "title": "ZOMBIES GO OUT",
+    "id": "series_1",
+    "title": "They Kicked Me Out, Now the Zombies Kneel to Me",
     "language": "English",
-    "thumbnail": "https://archive.org/services/img/They_Kicked_Me_Out",
-    "description": "32 Vertical Episodes (60s each)",
-    "baseUrl": "https://archive.org/download/They_Kicked_Me_Out/They%20Kicked%20Me%20Out%2C%20Now%20the%20Zombies%20Kneel%20to%20Me/",
+    "thumbnail": "",
+    "description": "60s Vertical Reels Series",
+    "baseUrl": "https://archive.org/download/zombies-kneel-series/",
     "totalEpisodes": 32,
     "filePattern": "ep_{num}.mp4",
     "padDigits": 3
