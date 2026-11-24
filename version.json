@@ -1,6 +1,4 @@
 {
-  "latestVersionCode": 2,
-  "latestVersionName": "1.1.0",
-  "apkUrl": "https://mania-reels.pages.dev/ManiaReels.apk",
-  "notes": "New Mania Reels Home page, dedicated app logo, and language filters."
+  "latestVersion": "1.0.0",
+  "apkUrl": "https://github.com/PureLight-web/mania-reels-android/releases/latest"
 }
